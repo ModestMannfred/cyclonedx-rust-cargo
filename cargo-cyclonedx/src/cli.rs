@@ -104,6 +104,10 @@ Defaults to the host target, as printed by 'rustc -vV'"
     /// Add license names which will not be warned about when parsing them as a SPDX expression fails
     #[clap(long = "license-accept-named", action=ArgAction::Append)]
     pub license_accept_named: Vec<String>,
+
+    /// Add a namespace to the purls of local files
+    #[clap(long = "local-namespace", value_name = "NAMESPACE")]
+    pub local_namespace: Option<String>,
 }
 
 impl Args {
@@ -198,6 +202,7 @@ impl Args {
             features,
             target,
             license_parser,
+            local_namespace: self.local_namespace.clone(),
         })
     }
 }

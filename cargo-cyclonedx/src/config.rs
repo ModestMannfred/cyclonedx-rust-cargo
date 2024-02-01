@@ -30,6 +30,7 @@ pub struct SbomConfig {
     pub features: Option<Features>,
     pub target: Option<Target>,
     pub license_parser: Option<LicenseParserOptions>,
+    pub local_namespace: Option<String>,
 }
 
 impl SbomConfig {
@@ -52,6 +53,7 @@ impl SbomConfig {
                 .clone()
                 .map(|other| self.license_parser.clone().unwrap_or_default().merge(other))
                 .or_else(|| self.license_parser.clone()),
+            local_namespace: other.local_namespace.clone(),
         }
     }
 

@@ -30,6 +30,7 @@ use cargo_metadata::Node;
 use cargo_metadata::NodeDep;
 use cargo_metadata::Package;
 use cargo_metadata::PackageId;
+use cargo_metadata::Source;
 
 use cargo_metadata::camino::Utf8PathBuf;
 use cyclonedx_bom::external_models::normalized_string::NormalizedString;
@@ -85,12 +86,31 @@ impl SbomGenerator {
         for member in members.iter() {
             log::trace!("Processing the package {}", member);
 
-            let (dependencies, pruned_resolve) =
+            let (mut dependencies, pruned_resolve) =
                 if config.included_dependencies() == IncludedDependencies::AllDependencies {
                     all_dependencies(member, &packages, &resolve)
                 } else {
                     top_level_dependencies(member, &packages, &resolve)
                 };
+
+            if let Some(namespace) = &config.local_namespace {
+                if let Some((_, x)) = dependencies
+                    .iter_mut()
+                    .find(|(_, &mut ref x)| x.source.is_none())
+                {
+                    x.source = Some(Source {
+                        repr: format!("local+{}", namespace),
+                    })
+                }
+                // dependencies
+                //     .iter_mut()
+                //     .find(|(_, &mut ref x)| x.source.is_none())
+                //     .map(|(_, x)| {
+                //         x.source = Some(Source {
+                //             repr: format!("local+{}", namespace),
+                //         })
+                //     });
+            }
 
             let generator = SbomGenerator {
                 config: config.clone(),

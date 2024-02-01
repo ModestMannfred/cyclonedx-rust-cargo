@@ -27,6 +27,9 @@ pub fn get_purl(
                 Some(("registry", registry_url)) => {
                     builder = builder.with_qualifier("repository_url", urlencode(registry_url))?
                 }
+                Some(("local", namespace)) => {
+                    builder = builder.with_namespace(namespace);
+                }
                 Some((source, _path)) => log::warn!("Unknown source kind {}", source),
                 None => {
                     log::warn!("No '+' separator found in source field from `cargo metadata`")
