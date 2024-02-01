@@ -91,6 +91,7 @@ fn assert_validation_passes(purl: &CdxPurl) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use cargo_metadata::Source;
     use percent_encoding::percent_decode;
     use purl::Purl;
     use serde_json;
@@ -99,6 +100,7 @@ mod tests {
     const GIT_PACKAGE_JSON: &str = include_str!("../tests/fixtures/git_package.json");
     const ROOT_PACKAGE_JSON: &str = include_str!("../tests/fixtures/root_package.json");
     const WORKSPACE_PACKAGE_JSON: &str = include_str!("../tests/fixtures/workspace_package.json");
+    const LOCAL_NAMESPACE: &str = "test-namespace";
 
     #[test]
     fn crates_io_purl() {
@@ -230,5 +232,30 @@ mod tests {
         );
         assert!(parsed_purl.subpath().is_none());
         assert!(parsed_purl.namespace().is_none());
+    }
+
+    #[test]
+    fn local_package_with_local_namespace() {
+        let root_package: Package = serde_json::from_str(ROOT_PACKAGE_JSON).unwrap();
+        let mut workspace_package: Package = serde_json::from_str(WORKSPACE_PACKAGE_JSON).unwrap();
+        workspace_package.source = Some(Source {
+            repr: format!("local+{}", LOCAL_NAMESPACE),
+        });
+        let purl = get_purl(
+            &workspace_package,
+            &root_package,
+            Utf8Path::new("/foo/bar/"),
+            None,
+        )
+        .unwrap();
+        // Validate that data roundtripped correctly
+        let parsed_purl = Purl::from_str(&purl.to_string()).unwrap();
+        assert_eq!(parsed_purl.name(), "cyclonedx-bom");
+        assert_eq!(parsed_purl.version(), Some("0.4.1"));
+        assert_eq!(parsed_purl.qualifiers().len(), 0);
+        assert!(parsed_purl.namespace().is_some());
+        let namespace = parsed_purl.namespace().unwrap();
+        assert_eq!(namespace, LOCAL_NAMESPACE);
+        assert!(parsed_purl.subpath().is_none());
     }
 }
