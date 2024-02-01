@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<bom xmlns="http://cyclonedx.org/schema/bom/1.3">
+  <metadata>
+    <authors>
+      <author>
+        <name>xml-name</name>
+        <email>contact@xml-co.com</email>
+        <phone>1.3</phone>
+      </author>
+    </authors>
+    <component type="_">
+      <name>_</name>
+      <version>_</version>
+      <publisher>Acme Publisher, Inc.</publisher>
+    </component>
+    <supplier>
+      <name>company Name</name>
+      <url>http://this-is-a-website.com</url>
+      <contact>
+        <name>companyContact</name>
+        <email>another.email@company.com</email>
+        <phone>134</phone>
+      </contact>
+    </supplier>
+  </metadata>
+</bom>

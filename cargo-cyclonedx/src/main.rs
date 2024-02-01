@@ -49,8 +49,10 @@ use cargo_cyclonedx::{
     config::{SbomConfig, Target},
     generator::SbomGenerator,
 };
+use cyclonedx_bom::models;
 
 use std::{
+    fs,
     io::{self},
     path::{Path, PathBuf},
 };
@@ -64,6 +66,8 @@ use log::LevelFilter;
 
 mod cli;
 use cli::{Args, Opts};
+use cyclonedx_bom::errors::XmlReadError;
+use cyclonedx_bom::prelude::Bom;
 
 fn main() -> anyhow::Result<()> {
     let Opts::Bom(args) = Opts::parse();
@@ -77,8 +81,16 @@ fn main() -> anyhow::Result<()> {
     let metadata = get_metadata(&args, &manifest_path, &cli_config)?;
     log::trace!("Running `cargo metadata` finished");
 
+    let extended_metadata = match locate_extended_metadata(&args)? {
+        Some(path) => {
+            log::debug!("Found extended metadata at {}", path.display());
+            get_extended_metadata(&path)?
+        }
+        None => None,
+    };
+
     log::trace!("SBOM generation started");
-    let boms = SbomGenerator::create_sboms(metadata, &cli_config)?;
+    let boms = SbomGenerator::create_sboms(metadata, &extended_metadata, &cli_config)?;
     log::trace!("SBOM generation finished");
 
     log::trace!("SBOM output started");
@@ -132,6 +144,19 @@ fn locate_manifest(args: &Args) -> Result<PathBuf, io::Error> {
     }
 }
 
+fn locate_extended_metadata(args: &Args) -> Result<Option<PathBuf>, io::Error> {
+    if let Some(extended_metadata_path) = &args.extended_metadata_path {
+        let extended_metadata_path = extended_metadata_path.canonicalize()?;
+        log::info!(
+            "Including extended metadata from: {}",
+            extended_metadata_path.to_string_lossy()
+        );
+        Ok(Some(extended_metadata_path))
+    } else {
+        Ok(None)
+    }
+}
+
 fn get_metadata(
     _args: &Args,
     manifest_path: &Path,
@@ -159,4 +184,45 @@ fn get_metadata(
     }
 
     Ok(cmd.exec()?)
+}
+
+fn get_extended_metadata(path: &Path) -> anyhow::Result<Option<models::metadata::Metadata>> {
+    match path
+        .extension()
+        .and_then(|s| s.to_str())
+        .ok_or(anyhow::anyhow!(
+            "Missing path extension for extended metadata input file: {:?}",
+            &path
+        ))? {
+        "xml" => {
+            let file = fs::File::open(path)?;
+            match Bom::parse_from_xml_v1_3(&file) {
+                Ok(bom) => Ok(bom),
+                Err(XmlReadError::InvalidNamespaceError {
+                    actual_namespace: Some(ref ns),
+                    expected_namespace: _,
+                }) if ns == "http://cyclonedx.org/schema/bom/1.4" => {
+                    let file = fs::File::open(path)?;
+                    Bom::parse_from_xml_v1_4(&file).map_err(|e| anyhow::anyhow!(e.to_string()))
+                }
+                Err(XmlReadError::InvalidNamespaceError {
+                    actual_namespace,
+                    expected_namespace: _,
+                }) => Err(anyhow::anyhow!(XmlReadError::InvalidNamespaceError {
+                    actual_namespace,
+                    expected_namespace: String::from("http://cyclonedx.org/schema/bom/1.3 or 1.4")
+                        .to_string()
+                })),
+                Err(e) => Err(anyhow::anyhow!(e.to_string())),
+            }
+        }
+        "json" => {
+            let file = fs::File::open(path)?;
+            Bom::parse_from_json(file).map_err(|e| anyhow::anyhow!(e.to_string()))
+        }
+        _ => Err(anyhow::anyhow!(
+            "Unrecognized extended metadata file extension."
+        )),
+    }
+    .map(|bom| bom.metadata)
 }

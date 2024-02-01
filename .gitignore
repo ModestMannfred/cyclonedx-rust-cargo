@@ -8,6 +8,7 @@
 **/bom.json
 **/*.cdx.json
 !cyclonedx-bom/tests/examples/**/*.cdx.json
+**/DELETE-THIS*
 
 # Nix Flake
 /.direnv/

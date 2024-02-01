@@ -1,0 +1,31 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.3",
+  "metadata": {
+    "authors": [
+      {
+        "name": "jsonName",
+        "email": "contact@json-co.com",
+        "phone": "1.3"
+      }
+    ],
+    "component": {
+      "type": "_",
+      "name": "_",
+      "version": "_",
+      "publisher": "acme publisher, inc."
+    },
+    "supplier": {
+      "name": "company name",
+      "url": ["http://this-is-a-website.com"],
+      "contact": [
+        {
+          "name": "companyContact",
+          "email": "another.email@company.com",
+          "phone": "134"
+        }
+      ]
+    }
+
+  }
+}

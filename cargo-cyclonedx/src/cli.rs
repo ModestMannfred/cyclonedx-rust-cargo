@@ -104,6 +104,10 @@ Defaults to the host target, as printed by 'rustc -vV'"
     /// Add license names which will not be warned about when parsing them as a SPDX expression fails
     #[clap(long = "license-accept-named", action=ArgAction::Append)]
     pub license_accept_named: Vec<String>,
+
+    /// Optional path to extended metadata
+    #[clap(long = "extended-metadata-path", value_name = "PATH")]
+    pub extended_metadata_path: Option<path::PathBuf>,
 }
 
 impl Args {

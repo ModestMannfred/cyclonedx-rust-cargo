@@ -69,11 +69,13 @@ type ResolveMap = BTreeMap<PackageId, Node>;
 pub struct SbomGenerator {
     config: SbomConfig,
     workspace_root: Utf8PathBuf,
+    extended: Option<Metadata>,
 }
 
 impl SbomGenerator {
     pub fn create_sboms(
         meta: CargoMetadata,
+        extended: &Option<Metadata>,
         config: &SbomConfig,
     ) -> Result<Vec<GeneratedSbom>, GeneratorError> {
         log::trace!("Processing the workspace {}", meta.workspace_root);
@@ -95,6 +97,7 @@ impl SbomGenerator {
             let generator = SbomGenerator {
                 config: config.clone(),
                 workspace_root: meta.workspace_root.to_owned(),
+                extended: extended.to_owned(),
             };
             let bom = generator.create_bom(member, &dependencies, &pruned_resolve)?;
 
@@ -424,6 +427,23 @@ impl SbomGenerator {
         let tool = Tool::new("CycloneDX", "cargo-cyclonedx", env!("CARGO_PKG_VERSION"));
 
         metadata.tools = Some(Tools(vec![tool]));
+
+        if let Some(extended) = &self.extended {
+            // Overwrite if necessary
+            if let Some(authors) = &extended.authors {
+                metadata.authors = Some(authors.clone());
+            }
+            // Overwrite if necessary
+            if let Some(supplier) = &extended.supplier {
+                metadata.supplier = Some(supplier.clone());
+            }
+            if let Some(component) = &extended.component {
+                // Overwrite if necessary
+                if let Some(publisher) = &component.publisher {
+                    metadata.component.as_mut().unwrap().publisher = Some(publisher.clone());
+                }
+            }
+        }
 
         Ok(metadata)
     }
