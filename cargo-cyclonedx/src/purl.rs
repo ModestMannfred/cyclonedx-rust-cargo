@@ -36,6 +36,9 @@ pub fn get_purl(
                 }
             }
         }
+    } else if let Some(repository) = &package.repository {
+        // todo: or "vcs_url"?
+        builder = builder.with_qualifier("repository_url", urlencode(repository))?
     } else {
         // source is None for packages from the local filesystem.
         // The manifest path ends with a `Cargo.toml`, so the package directory is its parent
